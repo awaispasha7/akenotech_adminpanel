@@ -9,7 +9,7 @@ INSERT INTO public.admin_users (
     role,
     is_active
 ) VALUES (
-    'ask@softtechniques.com',
+    'ask@akenotech.com',
     'Admin User',
     'admin',
     true

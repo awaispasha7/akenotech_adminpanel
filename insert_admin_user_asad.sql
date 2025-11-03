@@ -1,4 +1,4 @@
--- SQL to add asad.aslam@softtechniques.com to admin_users table
+-- SQL to add asad.aslam@akenotech.com to admin_users table
 -- Run this in Supabase SQL Editor if you want to add the user to the admin_users table
 
 INSERT INTO public.admin_users (
@@ -7,7 +7,7 @@ INSERT INTO public.admin_users (
     role,
     is_active
 ) VALUES (
-    'asad.aslam@softtechniques.com',
+    'asad.aslam@akenotech.com',
     'Asad Aslam',
     'admin',
     true

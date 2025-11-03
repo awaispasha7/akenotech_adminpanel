@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { auth } from '../lib/supabase';
 
 interface TeamMember {
   name: string;
@@ -9,7 +10,7 @@ interface TeamMember {
   phone: string;
 }
 
-const API_BASE = 'https://web-production-608ab4.up.railway.app';
+const API_BASE = 'https://web-production-ae7a.up.railway.app';
 
 export default function TeamManagement() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -49,7 +50,9 @@ export default function TeamManagement() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/admin/team`, {
+        headers,
         signal: controller.signal
       });
       
@@ -84,8 +87,10 @@ export default function TeamManagement() {
 
     try {
       setIsAdding(true);
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/admin/team/add?name=${encodeURIComponent(newMember.name)}&email=${encodeURIComponent(newMember.email)}&role=${encodeURIComponent(newMember.role)}&phone=${encodeURIComponent(newMember.phone)}`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       });
       
       const data = await response.json();
@@ -114,8 +119,10 @@ export default function TeamManagement() {
       // Since backend doesn't have an update endpoint, we'll remove the old member and add the updated one
       // First, remove the old team member (always remove to ensure clean update)
       try {
+        const headers = await auth.getAuthHeaders();
         const removeResponse = await fetch(`${API_BASE}/admin/team/remove/${encodeURIComponent(editingMember.originalEmail)}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers
         });
         
         // Try to parse response, but continue even if it fails
@@ -134,8 +141,10 @@ export default function TeamManagement() {
       }
       
       // Then add the updated team member
+      const headers = await auth.getAuthHeaders();
       const addResponse = await fetch(`${API_BASE}/admin/team/add?name=${encodeURIComponent(editingMember.name)}&email=${encodeURIComponent(editingMember.email)}&role=${encodeURIComponent(editingMember.role)}&phone=${encodeURIComponent(editingMember.phone)}`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       });
       
       if (!addResponse.ok) {
@@ -163,8 +172,10 @@ export default function TeamManagement() {
 
     try {
       setIsRemoving(email);
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/admin/team/remove/${email}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       
       const data = await response.json();
@@ -207,7 +218,7 @@ export default function TeamManagement() {
 
   return (
     <>
-      <div style={{backgroundColor: '#1a2e26'}} className="border border-gray-600 rounded-xl p-8 mb-8 shadow-lg hover:shadow-xl transition-all duration-300">
+      <div style={{backgroundColor: '#0a0a0a'}} className="border border-gray-600 rounded-xl p-8 mb-8 shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">
@@ -328,15 +339,15 @@ export default function TeamManagement() {
 
       {/* Add Team Member Popup Form */}
       {showAddModal && (
-        <div className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4" style={{backgroundColor: '#29473d'}}>
-          <div style={{backgroundColor: '#1a2e26'}} className="border border-gray-600 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4" style={{backgroundColor: '#000000'}}>
+          <div style={{backgroundColor: '#000000', borderColor: '#1a1a1a'}} className="border rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Popup Header */}
-            <div className="rounded-t-2xl p-4" style={{backgroundColor: '#29473d'}}>
+            <div className="rounded-t-2xl p-4" style={{backgroundColor: '#000000'}}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-10 h-10 flex items-center justify-center mr-3">
                     <img 
-                      src="/logo9.png" 
+                      src="/final.png" 
                       alt="Logo" 
                       className="w-10 h-10 object-contain rounded-lg"
                     />
@@ -367,7 +378,8 @@ export default function TeamManagement() {
                     value={newMember.name}
                     onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
                     required
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter team member name"
                   />
                 </div>
@@ -381,7 +393,8 @@ export default function TeamManagement() {
                     value={newMember.email}
                     onChange={(e) => setNewMember(prev => ({ ...prev, email: e.target.value }))}
                     required
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter email address"
                   />
                 </div>
@@ -395,7 +408,8 @@ export default function TeamManagement() {
                     value={newMember.role}
                     onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
                     required
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter role (e.g., Sales Representative)"
                   />
                 </div>
@@ -408,7 +422,8 @@ export default function TeamManagement() {
                     type="tel"
                     value={newMember.phone}
                     onChange={(e) => setNewMember(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter phone number"
                   />
                 </div>
@@ -440,15 +455,15 @@ export default function TeamManagement() {
 
       {/* Edit Team Member Popup Form */}
       {showEditModal && (
-        <div className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4" style={{backgroundColor: '#29473d'}}>
-          <div style={{backgroundColor: '#1a2e26'}} className="border border-gray-600 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4" style={{backgroundColor: '#000000'}}>
+          <div style={{backgroundColor: '#000000', borderColor: '#1a1a1a'}} className="border rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Popup Header */}
-            <div className="rounded-t-2xl p-4" style={{backgroundColor: '#29473d'}}>
+            <div className="rounded-t-2xl p-4" style={{backgroundColor: '#000000'}}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-10 h-10 flex items-center justify-center mr-3">
                     <img 
-                      src="/logo9.png" 
+                      src="/final.png" 
                       alt="Logo" 
                       className="w-10 h-10 object-contain rounded-lg"
                     />
@@ -479,7 +494,8 @@ export default function TeamManagement() {
                     value={editingMember.name}
                     onChange={(e) => setEditingMember(prev => ({ ...prev, name: e.target.value }))}
                     required
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter team member name"
                   />
                 </div>
@@ -493,7 +509,8 @@ export default function TeamManagement() {
                     value={editingMember.email}
                     onChange={(e) => setEditingMember(prev => ({ ...prev, email: e.target.value }))}
                     required
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter email address"
                   />
                 </div>
@@ -507,7 +524,8 @@ export default function TeamManagement() {
                     value={editingMember.role}
                     onChange={(e) => setEditingMember(prev => ({ ...prev, role: e.target.value }))}
                     required
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter role (e.g., Sales Representative)"
                   />
                 </div>
@@ -520,7 +538,8 @@ export default function TeamManagement() {
                     type="tel"
                     value={editingMember.phone}
                     onChange={(e) => setEditingMember(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border-2 border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:border-gray-500"
+                    className="w-full px-3 py-2 border-2 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-gray-500"
+                    style={{backgroundColor: '#1a1a1a', border: '2px solid #1a1a1a'}}
                     placeholder="Enter phone number"
                   />
                 </div>

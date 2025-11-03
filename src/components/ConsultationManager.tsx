@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { auth } from '../lib/supabase';
 
 interface Consultation {
   id: string;
@@ -15,7 +16,7 @@ interface Consultation {
   created_at: string;
 }
 
-const API_BASE = 'https://web-production-608ab4.up.railway.app';
+const API_BASE = 'https://web-production-ae7a.up.railway.app';
 
 interface ConsultationManagerProps {
   onStatusUpdate?: () => void;
@@ -53,9 +54,11 @@ export default function ConsultationManager({ onStatusUpdate }: ConsultationMana
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       // Add cache-busting parameter to ensure fresh data on reload
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/consultation/all?t=${Date.now()}`, {
         cache: 'no-cache',
         headers: {
+          ...headers,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
@@ -96,8 +99,10 @@ export default function ConsultationManager({ onStatusUpdate }: ConsultationMana
   const updateConsultationStatus = async (consultationId: string, newStatus: string) => {
     try {
       setUpdating(consultationId);
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/consultation/update-status/${consultationId}?status=${newStatus}`, {
-        method: 'PUT'
+        method: 'PUT',
+        headers
       });
       
       const data = await response.json();
@@ -134,8 +139,10 @@ export default function ConsultationManager({ onStatusUpdate }: ConsultationMana
 
     try {
       setUpdating(consultationId);
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/consultation/delete/${consultationId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       
       const data = await response.json();
@@ -202,7 +209,7 @@ export default function ConsultationManager({ onStatusUpdate }: ConsultationMana
   }
 
   return (
-    <div style={{backgroundColor: '#1a2e26'}} className="border border-gray-600 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
+    <div style={{backgroundColor: '#0a0a0a'}} className="border border-gray-600 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-4">

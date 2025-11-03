@@ -92,7 +92,7 @@ CREATE TRIGGER update_admin_users_updated_at
 -- ============================================
 -- Uncomment and update the email if you want to insert an admin user
 -- INSERT INTO public.admin_users (email, full_name, role, is_active)
--- VALUES ('admin@softtechniques.com', 'Admin User', 'admin', true)
+-- VALUES ('ask@akenotech.com', 'Admin User', 'admin', true)
 -- ON CONFLICT (email) DO NOTHING;
 
 -- ============================================

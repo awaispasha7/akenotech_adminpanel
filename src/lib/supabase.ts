@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 // Supabase configuration
 // Replace these with your actual Supabase project credentials
 // Get them from: https://app.supabase.com/project/_/settings/api
-const supabaseUrl = 'https://qxusgissnsnqobpozhuq.supabase.co'; // Replace with your Supabase project URL
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dXNnaXNzbnNucW9icG96aHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4ODc2NDgsImV4cCI6MjA3NzQ2MzY0OH0.jLyrt8_MYJXZzDb3oF20fbGqvulXaDW-QbtO9j9UK4g'; // Replace with your Supabase anon/public key
+const supabaseUrl = 'https://cgwikuodyiiwsjlgyuea.supabase.co'; // Replace with your Supabase project URL
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnd2lrdW9keWlpd3NqbGd5dWVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMjk1NjksImV4cCI6MjA3NzcwNTU2OX0.mm83O7jhzDzKkjn9zvXPhhRCz5p-ZGwXMgyVwOyn8m0'; // Replace with your Supabase anon/public key
 
 // Validation check - credentials are configured
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -65,11 +65,10 @@ export const auth = {
       // Check if user email is in admin list or has admin role
       // Add your admin email addresses here
       const adminEmails = [
-        'admin@softtechniques.com',
-        'ask@softtechniques.com', // Admin user email
-        'asad.aslam@softtechniques.com', // Admin user email
-        'awaispasha@softtechniques.com', // Admin user email
-        'uahmad@softtechniques.com' // Admin user email
+        'ask@akenotech.com', // Admin user email
+        'uahmad@akenotech.com', // Admin user email
+        'asad.aslam@akenotech.com', // Admin user email
+        'awaispasha@akenotech.com' // Admin user email
       ];
       
       // Normalize emails for case-insensitive comparison (trim and lowercase)
@@ -93,6 +92,29 @@ export const auth = {
       console.error('[Admin Check] Error checking admin status:', error);
       return false;
     }
+  },
+
+  // Get access token from current session
+  getAccessToken: async () => {
+    const session = await auth.getSession();
+    return session?.access_token || null;
+  },
+
+  // Get auth headers for API requests
+  getAuthHeaders: async () => {
+    const token = await auth.getAccessToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
   },
 
   // Listen to auth state changes

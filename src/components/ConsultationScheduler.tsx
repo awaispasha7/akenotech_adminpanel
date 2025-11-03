@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { auth } from '../lib/supabase';
 
 interface ConsultationFormData {
   name: string;
@@ -17,7 +18,7 @@ interface AvailableSlot {
   times: string[];
 }
 
-const API_BASE = 'https://web-production-608ab4.up.railway.app';
+const API_BASE = 'https://web-production-ae7a.up.railway.app';
 
 export default function ConsultationScheduler() {
   const [formData, setFormData] = useState<ConsultationFormData>({
@@ -44,7 +45,10 @@ export default function ConsultationScheduler() {
   const loadAvailableSlots = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/consultation/available-slots`);
+      const headers = await auth.getAuthHeaders();
+      const response = await fetch(`${API_BASE}/consultation/available-slots`, {
+        headers
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -75,9 +79,11 @@ export default function ConsultationScheduler() {
     setSuccess(false);
 
     try {
+      const headers = await auth.getAuthHeaders();
       const response = await fetch(`${API_BASE}/consultation/schedule`, {
         method: 'POST',
         headers: {
+          ...headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData)
