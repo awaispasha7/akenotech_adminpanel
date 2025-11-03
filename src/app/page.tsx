@@ -146,54 +146,68 @@ export default function Home() {
     // Set client-side flag to prevent hydration mismatch
     setIsClient(true);
     
-    // Check authentication on mount
+    let initialCheckComplete = false;
+    
+    // Check authentication on mount - this runs first
     const checkAuth = async () => {
       try {
         setIsCheckingAuth(true);
         const session = await auth.getSession();
         
-        if (session) {
+        if (session?.user) {
           const user = session.user;
           const isAdminUser = await auth.isAdmin();
           
-        if (isAdminUser) {
-          setIsLoggedIn(true);
-          setLoggedInUser({
-            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
-            email: user.email || ''
-          });
-          
-          // Load stats only if logged in
-          loadStats();
-          
-          // Set up automatic polling every 10 seconds
-          const interval = setInterval(() => {
-            loadStats(true);
-          }, 10000);
-          
-          // Store interval ID for cleanup
-          (window as any).statsInterval = interval;
+          if (isAdminUser) {
+            setIsLoggedIn(true);
+            setLoggedInUser({
+              name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
+              email: user.email || ''
+            });
+            
+            // Load stats only if logged in
+            loadStats();
+            
+            // Set up automatic polling every 10 seconds
+            const interval = setInterval(() => {
+              loadStats(true);
+            }, 10000);
+            
+            // Store interval ID for cleanup
+            (window as any).statsInterval = interval;
           } else {
             // Not an admin, sign out
             await auth.signOut();
             setIsLoggedIn(false);
+            setLoggedInUser({ name: '', email: '' });
           }
         } else {
           setIsLoggedIn(false);
+          setLoggedInUser({ name: '', email: '' });
         }
       } catch (error) {
         console.error('Auth check error:', error);
         setIsLoggedIn(false);
+        setLoggedInUser({ name: '', email: '' });
       } finally {
+        // Mark initial check as complete before setting isCheckingAuth to false
+        initialCheckComplete = true;
         setIsCheckingAuth(false);
       }
     };
     
+    // Run initial auth check first
     checkAuth();
     
-    // Listen to auth state changes
+    // Listen to auth state changes (but don't modify isCheckingAuth here)
     const subscription = auth.onAuthStateChange(async (event, session) => {
       console.log('[Auth State Change]', { event, hasUser: !!session?.user, userEmail: session?.user?.email });
+      
+      // Skip handling if initial check hasn't completed yet
+      // This prevents auth state changes from interfering with the initial check
+      if (!initialCheckComplete && event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') {
+        return;
+      }
       
       if (session?.user) {
         const user = session.user;
@@ -237,14 +251,32 @@ export default function Home() {
           console.error('[Auth State Change] Error in handler:', error);
           // Don't sign out on error, just log it
         }
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         // User signed out
         console.log('[Auth State Change] User signed out or no session');
         setIsLoggedIn(false);
         setLoggedInUser({ name: '', email: '' });
       }
-      setIsCheckingAuth(false);
+      // Don't set isCheckingAuth to false here - that's only for initial check
     });
+    
+    // Set up periodic session validation (every 5 minutes)
+    const sessionValidationInterval = setInterval(async () => {
+      try {
+        const session = await auth.getSession();
+        if (session) {
+          const isValid = await auth.isSessionValid();
+          if (!isValid) {
+            console.warn('[Session] Session expired, signing out...');
+            await auth.signOut();
+            setIsLoggedIn(false);
+            setLoggedInUser({ name: '', email: '' });
+          }
+        }
+      } catch (error) {
+        console.error('[Session] Error validating session:', error);
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
     
     return () => {
       if (subscription?.data?.subscription) {
@@ -254,6 +286,8 @@ export default function Home() {
       if ((window as any).statsInterval) {
         clearInterval((window as any).statsInterval);
       }
+      // Clear session validation interval
+      clearInterval(sessionValidationInterval);
     };
   }, []);
 
@@ -423,7 +457,7 @@ export default function Home() {
   // Show loading screen while checking authentication
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#29473d'}}>
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#000000'}}>
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-lg">Loading...</p>
@@ -435,17 +469,19 @@ export default function Home() {
   // If user is not logged in, show only login page
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#29473d'}}>
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#000000'}}>
         {/* Login Page */}
         <div className="max-w-md w-full mx-4">
-          <div className="rounded-xl shadow-2xl border p-5" style={{backgroundColor: '#1f3a32', borderColor: '#29473d'}}>
+          <div className="rounded-xl shadow-2xl border p-5" style={{backgroundColor: '#000000', borderColor: '#000000'}}>
             {/* Logo */}
-            <div className="text-center mb-2">
-              <img 
-                src="/logo8.png" 
-                alt="Soft Techniques Logo" 
-                className="w-[250px] h-[250px] object-contain mx-auto"
-              />
+            <div className="text-center mb-6">
+              <div className="inline-block bg-white p-4 rounded-2xl shadow-2xl">
+                <img 
+                  src="/final.png" 
+                  alt="Akeno Tech Logo" 
+                  className="w-[180px] h-[180px] object-contain mx-auto"
+                />
+              </div>
             </div>
 
             {/* Login Form */}
@@ -468,8 +504,8 @@ export default function Home() {
                     formErrors.email ? 'border-2 border-red-500' : ''
                   }`}
                   style={{
-                    backgroundColor: '#29473d', 
-                    border: formErrors.email ? '2px solid #ef4444' : '2px solid #29473d'
+                    backgroundColor: '#1a1a1a', 
+                    border: formErrors.email ? '2px solid #ef4444' : '2px solid #1a1a1a'
                   }}
                   placeholder="Enter your email"
                 />
@@ -501,8 +537,8 @@ export default function Home() {
                     formErrors.password ? 'border-2 border-red-500' : ''
                   }`}
                   style={{
-                    backgroundColor: '#29473d', 
-                    border: formErrors.password ? '2px solid #ef4444' : '2px solid #29473d'
+                    backgroundColor: '#1a1a1a', 
+                    border: formErrors.password ? '2px solid #ef4444' : '2px solid #1a1a1a'
                   }}
                   placeholder="Enter your password"
                 />
@@ -551,17 +587,18 @@ export default function Home() {
 
   // If user is logged in, show the full dashboard
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#29473d'}}>
+    <div className="min-h-screen" style={{backgroundColor: '#000000'}}>
       {/* Top Bar */}
-      <div style={{backgroundColor: '#1f3a32', borderColor: '#29473d'}} className="border-b shadow-lg">
+      <div style={{backgroundColor: '#000000', borderColor: '#1a1a1a'}} className="border-b shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-18 lg:h-20 w-full">
             <div className="flex items-center space-x-3">
               <img 
-                src="/logo8.png" 
+                src="/final.png" 
                 alt="Admin Panel Logo" 
-                className="w-[200px] h-[200px] object-contain"
+                className="h-16 w-auto object-contain rounded-lg"
               />
+              <h1 className="text-white text-2xl font-bold">Akeno Tech</h1>
             </div>
             <div className="flex items-center space-x-4">
               {isLoggedIn && (

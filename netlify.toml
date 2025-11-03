@@ -6,7 +6,7 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
 
-# Next.js configuration for Netlify
 # Netlify automatically detects Next.js and uses the Next.js runtime
-# This app uses client-side rendering, so it's fully compatible
+# For Next.js 13+ App Router, Netlify handles routing automatically
+# This app uses client-side rendering ('use client'), fully compatible
 

@@ -11,12 +11,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('⚠️ Supabase credentials are missing!');
 }
 
-// Create Supabase client
+// Create Supabase client with enhanced session management
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'akenotech_auth_token',
+    flowType: 'pkce'
   }
 });
 
@@ -39,11 +42,35 @@ export const auth = {
     if (error) throw error;
   },
 
-  // Get current session
+  // Get current session with validation
   getSession: async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    return session;
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('[Session] Error getting session:', error);
+        throw error;
+      }
+      
+      // Validate session is still valid
+      if (session) {
+        const now = Math.floor(Date.now() / 1000);
+        if (session.expires_at && session.expires_at < now) {
+          console.warn('[Session] Session expired, attempting refresh...');
+          // Try to refresh the session
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError || !refreshedSession) {
+            console.error('[Session] Failed to refresh session:', refreshError);
+            return null;
+          }
+          return refreshedSession;
+        }
+      }
+      
+      return session;
+    } catch (error) {
+      console.error('[Session] Error in getSession:', error);
+      return null;
+    }
   },
 
   // Get current user
@@ -94,10 +121,65 @@ export const auth = {
     }
   },
 
-  // Get access token from current session
+  // Get access token from current session with auto-refresh
   getAccessToken: async () => {
-    const session = await auth.getSession();
-    return session?.access_token || null;
+    try {
+      const session = await auth.getSession();
+      if (!session) {
+        console.warn('[Session] No active session found');
+        return null;
+      }
+      
+      // Check if token is about to expire (within 5 minutes)
+      const now = Math.floor(Date.now() / 1000);
+      if (session.expires_at && session.expires_at - now < 300) {
+        console.log('[Session] Token expiring soon, refreshing...');
+        const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+        if (error || !refreshedSession) {
+          console.error('[Session] Failed to refresh token:', error);
+          return session.access_token; // Return existing token as fallback
+        }
+        return refreshedSession.access_token;
+      }
+      
+      return session.access_token;
+    } catch (error) {
+      console.error('[Session] Error getting access token:', error);
+      return null;
+    }
+  },
+  
+  // Check if session is valid
+  isSessionValid: async () => {
+    try {
+      const session = await auth.getSession();
+      if (!session) return false;
+      
+      const now = Math.floor(Date.now() / 1000);
+      if (session.expires_at && session.expires_at < now) {
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('[Session] Error checking session validity:', error);
+      return false;
+    }
+  },
+  
+  // Refresh session manually
+  refreshSession: async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('[Session] Error refreshing session:', error);
+        throw error;
+      }
+      return session;
+    } catch (error) {
+      console.error('[Session] Failed to refresh session:', error);
+      throw error;
+    }
   },
 
   // Get auth headers for API requests
