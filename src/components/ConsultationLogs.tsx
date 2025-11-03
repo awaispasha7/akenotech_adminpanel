@@ -15,12 +15,18 @@ interface ConsultationLog {
 
 const API_BASE = 'https://web-production-ae7a.up.railway.app';
 
-export default function ConsultationLogs() {
+interface ConsultationLogsProps {
+  onLogsCleared?: () => void;
+  refreshTrigger?: number;
+}
+
+export default function ConsultationLogs({ onLogsCleared, refreshTrigger }: ConsultationLogsProps) {
   const [logs, setLogs] = useState<ConsultationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState('24');
   const [statusFilter, setStatusFilter] = useState('');
+  const [hideDeleted, setHideDeleted] = useState(false);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
 
   const loadLogs = useCallback(async (isAutoRefresh = false) => {
@@ -65,6 +71,13 @@ export default function ConsultationLogs() {
       if (data.status === 'success') {
         let filteredLogs = data.logs || [];
         
+        // Filter out deleted actions if hideDeleted is enabled
+        if (hideDeleted) {
+          filteredLogs = filteredLogs.filter((log: ConsultationLog) => 
+            log.action.toLowerCase() !== 'deleted' && log.status.toLowerCase() !== 'deleted'
+          );
+        }
+        
         // Apply status filter on the frontend if selected
         if (statusFilter) {
           filteredLogs = filteredLogs.filter((log: ConsultationLog) => 
@@ -74,6 +87,13 @@ export default function ConsultationLogs() {
         
         setLogs(filteredLogs);
         setError('');
+        
+        // If logs are empty after filtering, notify parent that logs were cleared
+        if (filteredLogs.length === 0 && data.logs && data.logs.length === 0 && !isAutoRefresh) {
+          if (onLogsCleared) {
+            onLogsCleared();
+          }
+        }
       } else {
         if (!isAutoRefresh) {
           setError('Failed to load consultation logs');
@@ -91,7 +111,7 @@ export default function ConsultationLogs() {
       setLoading(false);
       setIsAutoRefreshing(false);
     }
-  }, [timeRange, statusFilter]);
+  }, [timeRange, statusFilter, hideDeleted]);
 
   useEffect(() => {
     // Initial load
@@ -105,6 +125,13 @@ export default function ConsultationLogs() {
     // Cleanup interval on component unmount or when filters change
     return () => clearInterval(interval);
   }, [loadLogs]);
+  
+  // Refresh logs when refreshTrigger changes (e.g., after delete all)
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      loadLogs(false);
+    }
+  }, [refreshTrigger, loadLogs]);
 
   // Stable reference for manual refresh button
   const handleManualRefresh = useCallback((e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -187,6 +214,15 @@ export default function ConsultationLogs() {
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
         </select>
+        <label className="flex items-center space-x-2 bg-gray-700 border border-gray-600 px-4 py-3 rounded-lg text-sm hover:bg-gray-600 transition-colors cursor-pointer">
+          <input
+            type="checkbox"
+            checked={hideDeleted}
+            onChange={(e) => setHideDeleted(e.target.checked)}
+            className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+          />
+          <span className="text-white">Hide Deleted</span>
+        </label>
         <button 
           onClick={handleManualRefresh}
           disabled={loading}

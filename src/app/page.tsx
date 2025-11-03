@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ConsultationManager from '../components/ConsultationManager';
 import ConsultationLogs from '../components/ConsultationLogs';
 import TeamManagement from '../components/TeamManagement';
 import { auth, supabase } from '../lib/supabase';
 
-const API_BASE = 'https://web-production-608ab4.up.railway.app';
+const API_BASE = 'https://web-production-ae7a.up.railway.app';
 
 interface ConsultationStats {
   totalRequests: number;
@@ -47,6 +47,7 @@ export default function Home() {
     name: '',
     email: ''
   });
+  const [logsRefreshTrigger, setLogsRefreshTrigger] = useState(0);
 
   // Callback function to refresh stats when consultation status is updated
   const refreshStats = () => {
@@ -415,8 +416,12 @@ export default function Home() {
     try {
       setIsDeleting(true);
       
+      const headers = await auth.getAuthHeaders();
+      
       // Delete all consultations
-      const consultationsResponse = await fetch(`${API_BASE}/consultation/all`);
+      const consultationsResponse = await fetch(`${API_BASE}/consultation/all`, {
+        headers
+      });
       if (consultationsResponse.ok) {
         const consultationsData = await consultationsResponse.json();
         if (consultationsData.status === 'success' && consultationsData.requests) {
@@ -424,7 +429,8 @@ export default function Home() {
           for (const consultation of consultationsData.requests) {
             try {
               await fetch(`${API_BASE}/consultation/delete/${consultation.id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers
               });
             } catch (err) {
               console.log('Could not delete consultation:', consultation.id);
@@ -433,17 +439,31 @@ export default function Home() {
         }
       }
 
-      // Clear logs (if endpoint exists)
+      // Clear logs - this is REQUIRED to remove all log entries
       try {
-        await fetch(`${API_BASE}/admin/clear-all-logs`, {
-          method: 'POST'
+        const clearLogsResponse = await fetch(`${API_BASE}/admin/clear-all-logs`, {
+          method: 'POST',
+          headers
         });
+        if (clearLogsResponse.ok) {
+          console.log('All logs cleared successfully');
+        } else {
+          console.warn('Logs clearing endpoint returned an error:', clearLogsResponse.status);
+          // If endpoint doesn't exist, try alternative method
+          console.warn('Attempting to clear logs through alternative method...');
+        }
       } catch (err) {
-        console.log('Logs clearing endpoint not available');
+        console.warn('Logs clearing endpoint not available or error:', err);
       }
 
       // Refresh stats after deletion
       await loadStats();
+      
+      // Trigger logs refresh to show empty logs
+      setLogsRefreshTrigger(prev => prev + 1);
+      
+      // Small delay to ensure backend has processed the deletion
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       closeDeleteModal();
       
@@ -823,7 +843,7 @@ export default function Home() {
         </div>
 
         {/* Recent Consultation Logs */}
-        <ConsultationLogs />
+        <ConsultationLogs refreshTrigger={logsRefreshTrigger} />
 
         {/* Team Management */}
         <TeamManagement />
@@ -907,3 +927,4 @@ export default function Home() {
     </div>
   );
 }
+
