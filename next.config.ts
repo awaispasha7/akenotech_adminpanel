@@ -2,8 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Enable standalone output for Railway deployment
-  output: 'standalone',
+  // For Netlify: use default output (not standalone)
+  // For Railway: change to 'standalone'
+  // output: 'standalone',
 };
 
 export default nextConfig;

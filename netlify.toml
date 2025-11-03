@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+# Next.js configuration for Netlify
+# Netlify automatically detects Next.js and uses the Next.js runtime
+# This app uses client-side rendering, so it's fully compatible
+
