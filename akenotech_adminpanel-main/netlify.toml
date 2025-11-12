@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+# Netlify automatically detects Next.js and uses the Next.js runtime
+# For Next.js 13+ App Router, Netlify handles routing automatically
+# This app uses client-side rendering ('use client'), fully compatible
+
