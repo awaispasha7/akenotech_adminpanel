@@ -75,17 +75,44 @@ export const auth = {
 
   // Get current user
   getUser: async () => {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    return user;
+    try {
+      // First check if we have a session
+      const session = await auth.getSession();
+      if (!session) {
+        return null;
+      }
+      
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        // If it's a session missing error, return null instead of throwing
+        if (error.message?.includes('session') || error.message?.includes('Session')) {
+          return null;
+        }
+        throw error;
+      }
+      return user;
+    } catch (error: any) {
+      // Handle AuthSessionMissingError gracefully
+      if (error?.message?.includes('session') || error?.message?.includes('Session')) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   // Check if user is admin (you can customize this logic)
   isAdmin: async () => {
     try {
-      const user = await auth.getUser();
+      // First check if we have a session
+      const session = await auth.getSession();
+      if (!session || !session.user) {
+        // No session is expected when not logged in, don't log as error
+        return false;
+      }
+      
+      // Use the user from the session instead of calling getUser() again
+      const user = session.user;
       if (!user || !user.email) {
-        console.log('[Admin Check] No user or email found');
         return false;
       }
       
@@ -104,7 +131,7 @@ export const auth = {
       
       const isAdmin = normalizedAdminEmails.includes(userEmail);
       
-      // Detailed debug logging
+      // Detailed debug logging (only when we have a user)
       console.log('[Admin Check]', {
         rawEmail: user.email,
         normalizedUserEmail: userEmail,
@@ -115,8 +142,11 @@ export const auth = {
       });
       
       return isAdmin;
-    } catch (error) {
-      console.error('[Admin Check] Error checking admin status:', error);
+    } catch (error: any) {
+      // Only log as error if it's not a session-related error
+      if (error?.message && !error.message.includes('session') && !error.message.includes('Session')) {
+        console.error('[Admin Check] Error checking admin status:', error);
+      }
       return false;
     }
   },
