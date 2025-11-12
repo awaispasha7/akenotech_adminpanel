@@ -10,7 +10,7 @@ interface TeamMember {
   phone: string;
 }
 
-const API_BASE = 'https://web-production-ae7a.up.railway.app';
+const API_BASE = '/api';
 
 export default function TeamManagement() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);

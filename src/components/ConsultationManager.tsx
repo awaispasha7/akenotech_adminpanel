@@ -16,7 +16,7 @@ interface Consultation {
   created_at: string;
 }
 
-const API_BASE = 'https://web-production-ae7a.up.railway.app';
+const API_BASE = '/api';
 
 interface ConsultationManagerProps {
   onStatusUpdate?: () => void;

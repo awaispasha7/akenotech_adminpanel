@@ -6,7 +6,7 @@ import ConsultationLogs from '../components/ConsultationLogs';
 import TeamManagement from '../components/TeamManagement';
 import { auth, supabase } from '../lib/supabase';
 
-const API_BASE = 'https://web-production-ae7a.up.railway.app';
+const API_BASE = '/api';
 
 interface ConsultationStats {
   totalRequests: number;

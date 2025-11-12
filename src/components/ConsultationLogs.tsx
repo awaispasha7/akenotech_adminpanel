@@ -13,7 +13,7 @@ interface ConsultationLog {
   company: string;
 }
 
-const API_BASE = 'https://web-production-ae7a.up.railway.app';
+const API_BASE = '/api';
 
 interface ConsultationLogsProps {
   onLogsCleared?: () => void;
